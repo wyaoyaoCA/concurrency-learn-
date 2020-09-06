@@ -1,76 +1,104 @@
 package study.wyy.concurrency.readWriteLock;
 
-/**
- * @author ：wyaoyao
- * @date ： 2020-05-06 21:28
- */
 public class ReadWriteLock {
-
-    // 记录当前有多少个线程在进行读取操作
-    private int readingReaders = 0;
-
-    // 记录当前有多少个线程想要读取，但是读取不了，放到了wait队列中
-    private int waitingReaders = 0;
-
-    // 记录当前有多少个线程在进行写操作，只有一个
-    private int writingWriters = 0;
-
-    // 记录当前有多少个线程想要写入，但是写入不了，放到了wait队列中，在等待其他释放锁
-    private int waitingWriters = 0;
+    /**
+     * @Description: 当前正在读取数据线程数量
+     */
+    private int readingThreads = 0;
 
     /**
-     * 加读锁
+     * @Description: 等待去读取数据的线程的数量， 但是读取不了，放到了wait队列中
      */
-    public synchronized void readLock() throws InterruptedException {
-        this.waitingReaders++;
-        try {
-            while (this.writingWriters > 0) {
-                // this.writingWriters > 0 说明有线程正在进行写操作，不能进行读取
-                // 只能等待
-                this.wait();
-            }
-            // 说明没有线程进行写入，可以进行读取操作
-            this.readingReaders++;
-        } finally {
-            // 最终释放锁的时候，要减减waitingReaders
-            this.waitingReaders--;
-        }
+    private int waitReadThreads = 0;
 
+    /**
+     * @Description: 正在写入数据的线程数量 只有一个
+     */
+    private int writingThreads = 0;
+
+    /**
+     * @Description: 记录当前有多少个线程想要写入，但是写入不了，放到了wait队列中，在等待其他释放锁
+     */
+    private int waitWriteThreads = 0;
+
+    /**
+     * @Description: 是否写入优先级更高
+     */
+    private boolean preferWrite;
+
+    public ReadWriteLock(boolean preferWrite) {
+        this.preferWrite = preferWrite;
+    }
+
+    public ReadWriteLock() {
+        // 默认 true
+        this(true);
     }
 
     /**
-     * 释放读锁
+     * @author: wyaoyao
+     * @Date: 2020/9/6 6:10 下午
+     * @Description: 加读锁
      */
-    public synchronized void unReadLock() {
-        // readingReaders 减一
-        this.readingReaders--;
-        // 唤醒其他等待的线程
+    public synchronized void readLock() throws InterruptedException {
+        // 获取锁的时候，有可能获取不到锁，进入到等待队列（waitSet）中, 所以waitReadThreads可能需要加1的
+        this.waitReadThreads++;
+        try {
+            while (writingThreads > 0 || (preferWrite && this.waitWriteThreads>0))  {
+                // 当前有线程正在进行写入的时候，肯定是不能这个读取数据的线程肯定是不能进行读取数据的，进入等待
+                // 如果更偏爱写入，并且有写入的线程数量大于0，也让读取的线程进入等待
+                // this.waitReadThreads++; 这个放在这里不合适，需要立马进入等待，就放到外面，但是可能会记录的数量不对
+                this.wait();
+            }
+            // 此时没有线程进行写入数据，就可以读取数据了, 正在读取数据的线程数加1
+            this.readingThreads++;
+        } finally {
+            // 最终释放锁的时候，要减减waitingReaders
+            this.waitReadThreads--;
+        }
+    }
+
+    /**
+     * @author: wyaoyao
+     * @Date: 2020/9/6 6:10 下午
+     * @Description: 释放读锁
+     */
+    public synchronized void readUnLock() throws InterruptedException {
+        // 1 读取数据的线程的数量减1
+        this.readingThreads--;
+        // 2 释放
         this.notifyAll();
     }
 
+
     /**
-     * 加写锁
+     * @author: wyaoyao
+     * @Date: 2020/9/6 6:10 下午
+     * @Description: 加写锁
      */
     public synchronized void writeLock() throws InterruptedException {
-        this.waitingWriters++;
+        // 获取锁的时候，有可能获取不到锁，进入到等待队列（waitSet）中, 所以waitWriteThreads可能需要加1的
+        this.waitWriteThreads++;
         try {
-            while (this.readingReaders > 0 || this.writingWriters > 0) {
-                //this.readingReaders > 0 || this.writingWriters > 0: 当有其他线程在进行读取或者写入的时候，
-                // 则当前线程不能进行写操作，只能等待
+            while (readingThreads > 0 || writingThreads > 0){
+                // 当有其他线程在进行读取或者写入的时候，则当前线程不能进行写操作，只能等待
                 this.wait();
             }
-        }finally {
-            // 最终释放锁的时候，要减减waitingReaders
-            this.waitingWriters--;
+            // 没有其他线程在进行读取或者写入的时候，那就可以进行写入
+            this.writingThreads++;
+        } finally {
+            // 最终释放锁的时候，要减减waitWriteThreads
+            this.waitWriteThreads--;
         }
-
     }
 
     /**
-     * 释放锁
+     * @author: wyaoyao
+     * @Date: 2020/9/6 6:10 下午
+     * @Description: 释放写锁
      */
     public synchronized void unWriteLock(){
-        this.waitingWriters--;
+        this.writingThreads--;
         this.notifyAll();
     }
 
