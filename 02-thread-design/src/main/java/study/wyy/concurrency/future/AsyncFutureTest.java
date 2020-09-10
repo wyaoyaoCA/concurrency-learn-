@@ -2,7 +2,7 @@ package study.wyy.concurrency.future;
 
 public class AsyncFutureTest {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main1(String[] args) throws InterruptedException {
         FutureService futureService = new FutureService();
         Future<String> future = futureService.submit(() -> {
             // 模拟方法执行的耗时
@@ -18,6 +18,25 @@ public class AsyncFutureTest {
         // 其他事情做完了，我来取刚刚的结果（蛋糕）
         String result = future.get();
         System.out.println(result);
+
+
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        FutureService futureService = new FutureService();
+        Future<String> future = futureService.submit(() -> {
+            // 模拟方法执行的耗时
+            try {
+                Thread.sleep(10000L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "FINSH";
+        },s->{
+            System.out.println(s);
+        });
+        // 干其他事情去了
+        doOther();
 
 
     }
