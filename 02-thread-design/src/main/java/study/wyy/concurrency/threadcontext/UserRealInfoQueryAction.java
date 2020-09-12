@@ -25,4 +25,9 @@ public class UserRealInfoQueryAction implements UserAction{
         context.setUserRealInfo(userRealInfo);
         log.info("start to query  user real info ");
     }
+    @Override
+    public void execute() {
+        Context context = ActionContext.getActionContext().getContext();
+        execute(context);
+    }
 }

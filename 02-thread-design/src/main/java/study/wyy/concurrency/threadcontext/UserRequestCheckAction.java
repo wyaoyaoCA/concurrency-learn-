@@ -38,4 +38,10 @@ public class UserRequestCheckAction implements UserAction{
         log.info("check  user request success ");
 
     }
+
+    @Override
+    public void execute() {
+        Context context = ActionContext.getActionContext().getContext();
+        execute(context);
+    }
 }

@@ -9,4 +9,7 @@ public interface UserAction {
 
     void execute(Context context);
 
+    void execute();
+
+
 }

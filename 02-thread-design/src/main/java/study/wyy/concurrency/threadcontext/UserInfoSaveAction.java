@@ -19,6 +19,12 @@ public class UserInfoSaveAction implements UserAction{
         save(userRequest);
     }
 
+    @Override
+    public void execute() {
+        Context context = ActionContext.getActionContext().getContext();
+        execute(context);
+    }
+
 
     private void save(UserRequest userRequest) {
         try {

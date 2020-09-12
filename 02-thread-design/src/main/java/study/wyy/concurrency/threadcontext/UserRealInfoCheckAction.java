@@ -47,4 +47,9 @@ public class UserRealInfoCheckAction implements UserAction {
 
     }
 
+    @Override
+    public void execute() {
+        Context context = ActionContext.getActionContext().getContext();
+        execute(context);
+    }
 }
